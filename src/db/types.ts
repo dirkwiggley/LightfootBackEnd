@@ -8,7 +8,7 @@ export interface UserInterface {
   locale: string;
   active: number;
   reset_password: number;
-  refreshtoken?: string;
+  refresh_token?: string;
 }
 
 export const objectIsUserInterface = (obj: unknown): obj is UserInterface => {

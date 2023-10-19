@@ -7,7 +7,6 @@ import authRoute from "./routes/auth.js"
 import userRoute from "./routes/users.js"
 import roleRoute from "./routes/roles.js"
 import dbUtilsRoute from "./routes/dbutils.js"
-import testRoute from "./routes/test.js"
 
 const app = express();
 if (process.env.DEBUG !== 'true') {
@@ -37,8 +36,6 @@ app.use("/auth", authRoute)
 app.use("/users", userRoute)
 app.use("/roles", roleRoute)
 app.use("/dbutils", dbUtilsRoute)
-app.use("/test", testRoute)
-app.use("/", testRoute)
 
 // Error handler
 app.use((err,req,res,next)=>{

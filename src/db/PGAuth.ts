@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Express from "express";
 
@@ -90,7 +89,7 @@ class PGAuth {
           return next(createError(500, "Could not get refresh token"));
         } else {
           // Add the access token to the user object
-          user.refreshtoken = refreshToken;
+          user.refresh_token = refreshToken;
           const pgUsers = new PGUsers();
           pgUsers.updateUser(user);
         }
@@ -185,7 +184,7 @@ class PGAuth {
       if (objectIsUserInterface(rows[0])) {
         userInfo = rows[0];
         const hashPwd = hash(pwd)
-        await client.query("UPDATE users SET pwd = ($1), resetpwd = ($2) WHERE id = ($3)", [hashPwd, false, userInfo.id]);
+        await client.query("UPDATE users SET pwd = ($1), reset_password = ($2) WHERE id = ($3)", [hashPwd, false, userInfo.id]);
   
         res.status(204).send()
 

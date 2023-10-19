@@ -48,12 +48,6 @@ class PGUsers {
         this.insertUserReusable = async (userInfo, next) => {
             let result = null;
             try {
-                // if (typeof userInfo.roles !== 'string') {
-                //   userInfo.roles = JSON.stringify(userInfo.roles);
-                // }
-                // // Convert these true/false values to 1/0
-                // userInfo.active = userInfo.active ? 1 : 0;
-                // userInfo.resetpwd = userInfo.resetpwd ? 1 : 0;
                 // New user has no id
                 if (userInfo.id === null || userInfo.id === undefined) {
                     await this.pool.connect();
@@ -99,7 +93,7 @@ class PGUsers {
                 throw new Error("Invalid user");
             }
             else {
-                const refreshToken = userInfo.refreshtoken ? userInfo.refreshtoken : null;
+                const refreshToken = userInfo.refresh_token ? userInfo.refresh_token : null;
                 try {
                     await this.pool.connect();
                     return await this.pool.query("UPDATE users SET login = ($1), nickname = ($2), email = ($3), roles = ($4), locale = ($5), active = ($6), reset_password = ($7), refresh_token = ($8) WHERE id = ($9) RETURNING *", [userInfo.login, userInfo.nickname, userInfo.email, userInfo.roles, userInfo.locale, userInfo.active, userInfo.reset_password, refreshToken, userInfo.id]);
@@ -119,16 +113,17 @@ class PGUsers {
                     next(createError(500, "Invalid user, can not logout"));
                 }
                 else {
-                    user = await client.query("SELECT * FROM users WHERE id = $1", [userId]);
-                    if (user && Array.isArray(user)) {
-                        user = user[0];
+                    let result = await client.query("SELECT * FROM users WHERE id = $1", [userId]);
+                    let rows = result?.rows;
+                    if (rows && Array.isArray(rows)) {
+                        user = rows[0];
                     }
                     else {
                         next(createError(500, "Could not find user"));
                     }
                     if (objectIsUserInterface(user)) {
                         try {
-                            client.query("UPDATE users SET login = ($1), nickname = ($2), email = ($3), roles = ($4), locale = ($5), active = ($6), resetpwd = ($7), refreshtoken = ($8) WHERE id = ($9", [user.login, user.nickname, user.email, user.roles, user.locale, user.active, user.reset_password, null, user.id]);
+                            client.query("UPDATE users SET login = ($1), nickname = ($2), email = ($3), roles = ($4), locale = ($5), active = ($6), reset_password = ($7), refresh_token = ($8) WHERE id = ($9)", [user.login, user.nickname, user.email, user.roles, user.locale, user.active, user.reset_password, null, user.id]);
                         }
                         catch (err) {
                             console.error(err);
@@ -144,7 +139,7 @@ class PGUsers {
                 return next(err);
             }
             finally {
-                client?.release(true);
+                client?.release(false);
             }
             res.status(204).send();
         };
@@ -195,7 +190,7 @@ class PGUsers {
                 //   console.error(err);
                 // }
                 // const create = db.prepare(
-                //   "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, login TEXT, pwd TEXT, nickname TEXT, email TEXT, roles TEXT, locale TEXT ,active INTEGER, resetpwd INTEGER, refreshtoken TEXT)"
+                //   "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, login TEXT, pwd TEXT, nickname TEXT, email TEXT, roles TEXT, locale TEXT ,active INTEGER, reset_password INTEGER, refresh_token TEXT)"
                 // );
                 // create.run();
                 const users = [
@@ -204,7 +199,7 @@ class PGUsers {
                         password: "admin",
                         nickname: "Admin",
                         email: "na@donotreply.com",
-                        roles: ["ADMIN", "USER"],
+                        roles: ["admin", "user"],
                         locale: "enUS",
                         active: 1,
                         reset_password: 0,
@@ -214,7 +209,7 @@ class PGUsers {
                         password: "user",
                         nickname: "User",
                         email: "na2@donotreply.com",
-                        roles: ["USER"],
+                        roles: ["user"],
                         locale: "enUS",
                         active: 1,
                         reset_password: 0,

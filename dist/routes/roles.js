@@ -1,14 +1,14 @@
 import express from "express";
-import DBRoles from "../db/DBRoles.js";
+import PGRoles from "../db/PGRoles.js";
 import { verifyAdmin, verifyUser } from "../middleware/auth.js";
 const router = express.Router();
 router.get('/', verifyUser, function (req, res, next) {
-    const dbRoles = new DBRoles();
-    dbRoles.getRoles(res, next);
+    const pgRoles = new PGRoles();
+    pgRoles.getRoles(res, next);
 });
 router.get('/init', verifyAdmin, function (req, res, next) {
-    const dbRoles = new DBRoles();
-    dbRoles.init(res, next);
+    const pgRoles = new PGRoles();
+    pgRoles.init(res, next);
 });
 export default router;
 //# sourceMappingURL=roles.js.map
