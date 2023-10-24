@@ -34,7 +34,6 @@ class PGAuth {
                     console.error("Illegal login params");
                     return next(createError(500, "Illegal login params"));
                 }
-                await this.pool.connect();
                 const { rows } = await this.pool.query("SELECT * FROM users WHERE login = $1", [login]);
                 let result = null;
                 let user = null;
@@ -104,7 +103,6 @@ class PGAuth {
                 const config = process.env;
                 const decodedToken = jwt.verify(accessToken, config.ACCESS_KEY);
                 // get the user from the db
-                await this.pool.connect();
                 let user = null;
                 if (objectIsDecodedToken(decodedToken)) {
                     const { rows } = await this.pool.query("SELECT * FROM users WHERE id = $1", [decodedToken.user_id]);

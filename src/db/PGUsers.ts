@@ -50,7 +50,7 @@ class PGUsers {
   };
 
   insertUserReusable = async (userInfo: UserInterface, next: any) => {
-    let result: string = null;
+    let result = null;
     try {
       // New user has no id
       if (userInfo.id === null || userInfo.id === undefined) {
@@ -158,9 +158,10 @@ class PGUsers {
   getUserById = async (id: number, res: Express.Response, next: any) => {
     try {
       await this.pool.connect();
-      let user = await this.pool.query("SELECT * FROM users WHERE id = $1", [id]);
-      if (user && Array.isArray(user)) {
-        user = user[0];
+      let response = await this.pool.query("SELECT * FROM users WHERE id = $1", [id]);
+      let user = null;
+      if (response && Array.isArray(response.rows)) {
+        user = response.rows[0];
       } else {
         next(createError(500, "Could not find user"))
       }

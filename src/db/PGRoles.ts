@@ -7,7 +7,6 @@ class PGRoles {
 
   getRoles = async (res, next) => {
     try {
-      await this.pool.connect();
       const {rows} = await this.pool.query("SELECT * FROM roles");
 
       res.send({ roles: rows });
@@ -22,11 +21,9 @@ class PGRoles {
   }
 
   init = async (res, next) => {
-    let client = null;
     try {
-      client = await this.pool.connect();
-      await client.query("DROP TABLE roles");
-      await client.query("CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
+      await PGUtils.client.query("DROP TABLE roles");
+      await PGUtils.client.query("CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
       const roles = [
         { name: "admin", displayName: "Admin" }, 
         { name: "associate", displayName: "Associate" }, 
@@ -42,7 +39,7 @@ class PGRoles {
     } catch (err) {
       return next(err);
     } finally {
-      client?.release(true);
+      PGUtils.client?.release(true);
     }
   };
 }

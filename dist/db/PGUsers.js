@@ -157,9 +157,10 @@ class PGUsers {
         this.getUserById = async (id, res, next) => {
             try {
                 await this.pool.connect();
-                let user = await this.pool.query("SELECT * FROM users WHERE id = $1", [id]);
-                if (user && Array.isArray(user)) {
-                    user = user[0];
+                let response = await this.pool.query("SELECT * FROM users WHERE id = $1", [id]);
+                let user = null;
+                if (response && Array.isArray(response.rows)) {
+                    user = response.rows[0];
                 }
                 else {
                     next(createError(500, "Could not find user"));

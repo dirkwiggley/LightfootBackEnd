@@ -5,7 +5,6 @@ import cors from "cors";
 import authRoute from "./routes/auth.js";
 import userRoute from "./routes/users.js";
 import roleRoute from "./routes/roles.js";
-import dbUtilsRoute from "./routes/dbutils.js";
 const app = express();
 if (process.env.DEBUG !== 'true') {
     app.use(function (req, res, next) {
@@ -30,7 +29,6 @@ app.use(cookieParser());
 app.use("/auth", authRoute);
 app.use("/users", userRoute);
 app.use("/roles", roleRoute);
-app.use("/dbutils", dbUtilsRoute);
 // Error handler
 app.use((err, req, res, next) => {
     console.log(err.message);
