@@ -6,7 +6,9 @@ class PGUtils {
   private static pool: pg.Pool;
   private static keepAlive: boolean = false;
   private static keepAliveInterval = null;
-  static client = null;
+  private static connFailed = false;
+  static client: any;
+  private static lastQuery = null;
 
   constructor() {
     if (PGUtils._instance) {
@@ -31,18 +33,54 @@ class PGUtils {
     }
   }
 
-  getPool = () => { return PGUtils.pool }
+  query = async (text: string, params: any) => {
+    const start = Date.now()
+    const res = await PGUtils.pool.query(text, params)
+    const duration = Date.now() - start
+    console.log('executed query', { text, duration, rows: res.rowCount })
+    return res
+  }
 
+  getClient = async () => {
+    const client = await PGUtils.pool.connect();
+    const query = client.query;
+    const release = client.release;
+    // set a timeout of 5 seconds, after which we will log this client's last query
+    const timeout = setTimeout(() => {
+      console.error('A client has been checked out for more than 5 seconds!')
+      // console.error(`The last executed query on this client was: ${client.lastQuery}`)
+    }, 5000);
+    // monkey patch the query method to keep track of the last query executed
+    client.query = (...args: any) => {
+      PGUtils.lastQuery = args;
+      return query.apply(client, args);
+    }
+    client.release = () => {
+      // clear our timeout
+      clearTimeout(timeout)
+      // set the methods back to their old un-monkey-patched version
+      client.query = query;
+      client.release = release;
+      return release.apply(client);
+    }
+    return client;
+  }
+
+  getPool = () => { return PGUtils.pool }
   keepDBAlive = async () => {
     if (!PGUtils.keepAlive) {
       PGUtils.client = await PGUtils.pool.connect();
       PGUtils.keepAliveInterval = setInterval(async () => {
         try {
           PGUtils.keepAlive = true;
-          await PGUtils.pool.query("SELECT * FROM pg_user");
-          const currentDate = new Date();
-          console.log(`Pinging database: ${currentDate.getDay()}/${currentDate.getMonth()}/${currentDate.getFullYear()} @ ${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}`);
+          const result = await PGUtils.pool.query("SELECT * FROM pg_user");
+          if (result && !PGUtils.connFailed) {
+            const currentDate = new Date();
+            console.log("x");
+            console.log(`Pinging database: ${currentDate.getDay()}/${currentDate.getMonth()}/${currentDate.getFullYear()} @ ${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}`);
+          }
         } catch (err) {
+          PGUtils.connFailed = true;
           console.error(err);
           PGUtils.keepAlive = false;
           clearInterval(PGUtils.keepAliveInterval);

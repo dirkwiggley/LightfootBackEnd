@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { createError } from "../utils/error.js";
 import PGUtils from "./PGUtils.js";
 import PGUsers from "./PGUsers.js";
-import { hash, compareHash } from "./CommonAuth.js";
+import { hash } from "./CommonAuth.js";
 import { objectIsDecodedToken, objectIsUserInterface } from "./types.js";
 class PGAuth {
     constructor() {
@@ -34,20 +34,10 @@ class PGAuth {
                     console.error("Illegal login params");
                     return next(createError(500, "Illegal login params"));
                 }
-                const { rows } = await this.pool.query("SELECT * FROM users WHERE login = $1", [login]);
-                let result = null;
-                let user = null;
-                if (rows && Array.isArray(rows)) {
-                    if (objectIsUserInterface(rows[0])) {
-                        user = { ...rows[0] };
-                        result = compareHash(password, user.pwd);
-                    }
-                    else {
-                        console.error("No user found");
-                        return next(createError(400, "No user found"));
-                    }
-                }
-                if (result) {
+                const db = new PGUtils();
+                const result = await db.query("SELECT * FROM users WHERE login = $1", [login]);
+                const user = { ...result?.rows[0] };
+                if (user) {
                     // Do not send the pwd back with the user!
                     delete user.pwd;
                     // Create tokens
@@ -105,7 +95,8 @@ class PGAuth {
                 // get the user from the db
                 let user = null;
                 if (objectIsDecodedToken(decodedToken)) {
-                    const { rows } = await this.pool.query("SELECT * FROM users WHERE id = $1", [decodedToken.user_id]);
+                    const db = new PGUtils();
+                    const { rows } = await db.query("SELECT * FROM users WHERE id = $1", [decodedToken.user_id]);
                     if (rows && Array.isArray(rows) && objectIsUserInterface(rows[0])) {
                         user = rows[0];
                         if (!user.active || !user.active) {
@@ -143,14 +134,14 @@ class PGAuth {
             }
         };
         this.resetPwd = async (id, pwd, res, next) => {
-            let client = await this.pool.connect();
             try {
-                const { rows } = await client.query("SELECT * FROM users WHERE id = $1", [id]);
+                const db = new PGUtils();
+                const { rows } = await db.query("SELECT * FROM users WHERE id = $1", [id]);
                 let userInfo = null;
                 if (objectIsUserInterface(rows[0])) {
                     userInfo = rows[0];
                     const hashPwd = hash(pwd);
-                    await client.query("UPDATE users SET pwd = ($1), reset_password = ($2) WHERE id = ($3)", [hashPwd, false, userInfo.id]);
+                    await db.query("UPDATE users SET pwd = ($1), reset_password = ($2) WHERE id = ($3)", [hashPwd, false, userInfo.id]);
                     res.status(204).send();
                 }
                 else {
@@ -160,9 +151,6 @@ class PGAuth {
             catch (err) {
                 console.error(err);
                 return next(err);
-            }
-            finally {
-                client?.release(true);
             }
         };
         this.logout = (userId, req, res, next) => {

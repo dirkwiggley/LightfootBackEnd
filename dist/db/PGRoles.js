@@ -2,11 +2,10 @@ import { createError } from "../utils/error.js";
 import PGUtils from "./PGUtils.js";
 class PGRoles {
     constructor() {
-        this.pgUtils = new PGUtils();
-        this.pool = this.pgUtils.getPool();
         this.getRoles = async (res, next) => {
             try {
-                const { rows } = await this.pool.query("SELECT * FROM roles");
+                const db = new PGUtils();
+                const { rows } = await db.query("SELECT * FROM roles", []);
                 res.send({ roles: rows });
             }
             catch (err) {
@@ -15,12 +14,14 @@ class PGRoles {
             }
         };
         this.insertRole = async (name, displayName) => {
-            await this.pool.query("INSERT INTO roles (name, display_name) VALUES ($1, $2)", [name, displayName]);
+            const db = new PGUtils();
+            await db.query("INSERT INTO roles (name, display_name) VALUES ($1, $2)", [name, displayName]);
         };
         this.init = async (res, next) => {
             try {
-                await PGUtils.client.query("DROP TABLE roles");
-                await PGUtils.client.query("CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
+                const db = new PGUtils();
+                await db.query("DROP TABLE roles", []);
+                await db.query("CREATE TABLE IF NOT EXISTS roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)", []);
                 const roles = [
                     { name: "admin", displayName: "Admin" },
                     { name: "associate", displayName: "Associate" },
